@@ -1,0 +1,253 @@
+
+
+
+#######apt update required to update the required file part################
+sudo vi /etc/apt/sources.list.d/ubuntu.sources
+
+Types: deb
+URIs: http://archive.ubuntu.com/ubuntu/
+Suites: noble noble-updates noble-backports
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb
+URIS: http://security.ubuntu.com/ubuntu/
+Suites: noble-security
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+sudo apt update
+sudo apt install net-tools
+ifconfig
+
+##############Create the ssh for rest application moba access##############
+ssh-keygen -t rsa -b 4096 -C "node2"
+
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+ssh localhost
+
+*****Optional steps*******
+sudo apt-get install openssh-server
+sudo systemctl start ssh
+sudo systemctl enable ssh
+
+
+#######################Change the server names ############################
+
+sudo hostnamectl set-hostname master.cdp
+
+sudo hostnamectl set-hostname datanode1.cdp
+
+sudo hostnamectl set-hostname datanode2.cdp
+
+
+hostnamectl status
+
+
+#########################Update the host file ##############################
+
+sudo vi /etc/hosts
+
+192.168.18.30   master.cdp master
+192.168.18.31   datanode1.cdp datanode1
+192.168.18.32   datanode2.cdp datanode2
+
+
+Check directory structure on all servers. It should be same as proposed.
+df -h
+
+
+###########Check if servers are able to ping each other.####################
+
+
+###################Install Java in all nodes ###############################
+sudo apt update
+sudo apt install -y openjdk-8-jdk
+java -version
+
+######################Set the JAVA_HOME path################################
+vi ~/.bashrc
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+export PATH=$JAVA_HOME/bin:$PATH
+
+
+###################Install python on all servers############################
+/etc/yum.repos.d/ums_appstream.repo
+sudo apt install python3.8
+
+python3 --version
+Python 3.12.3
+
+
+######################check internet access is on or not#####################
+ping google.com
+
+
+##########################Time Sync: Enable and configure chronyd for time syncing (Alternative of ntpd) on all server
+sudo apt install -y chrony
+sudo systemctl enable chrony
+sudo systemctl start chrony
+sudo chronyc sources
+sudo timedatectl set-timezone Asia/Karachi
+
+***Run the above commands step by step******
+if your chrony is facing an issue then instal the required dependencies and then install it again
+sudo apt-get upgrade perl
+sudo apt-get install libperl-dev
+sudo systemctl restart chrony
+
+*****Set the timezone*********
+timedatectl
+sudo timedatectl set-timezone Asia/Karachi
+
+
+############################Disable SELinux###################################
+vi /etc/selinux/config
+Press 'i' to goto edit mode
+Change SELINUX=enforcing to SELINUX=permissive
+********Ubuntu does not have SELinux enabled by default, so you can skip this step.************
+
+
+
+########################Set VM Swapiness=1####################################
+sudo sysctl -w vm.swappiness=1
+echo 'vm.swappiness=1' | sudo tee /etc/sysctl.d/90-cloudera-swappiness.conf
+sudo sysctl -p /etc/sysctl.d/90-cloudera-swappiness.conf
+
+
+##########Print the server name in this file /etc/rc.local####################
+sudo echo "sudo hostnamectl set-hostname master.cdp" >> /etc/rc.local
+sudo echo "sudo hostnamectl set-hostname datanode1.cdp" >> /etc/rc.local
+sudo echo "sudo hostnamectl set-hostname datanode2.cdp" >> /etc/rc.local
+
+
+#################Disable Transparent huge files###############################
+
+sudo vi /etc/rc.local
+
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+echo never > /sys/kernel/mm/transparent_hugepage/defrag
+
+sudo sed -i '/Google/ s/^/#/' /etc/hosts
+
+
+########################Disable Firewall in all nodes#########################
+
+sudo ufw disable
+
+
+############################Create Cloudera User##############################
+
+sudo adduser bda_cloudera
+sudo su - bda_cloudera
+ssh-keygen -t rsa -b 4096 -C "master"
+****Add the password*******
+
+#########copy the ssh key to other server and ssh to other servers#############
+ssh-copy-id -i ~/.ssh/id_rsa.pub bda_cloudera@192.168.18.32
+ssh-copy-id -i ~/.ssh/id_rsa.pub bda_cloudera@192.168.18.31
+
+
+**********Optional no need in ubuntu************
+How to run the ssh command  give me the upadte command, i am trying it for ssh 
+example command 
+ssh-keygen -t rsa
+cat $HOME/.ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys
+
+
+
+
+
+#########################mysql installation#####################################
+sudo apt update
+sudo apt install mysql-server
+
+systemctl list-units --type=service | grep mysql
+
+
+sudo systemctl enable mysql
+sudo systemctl start mysql
+sudo systemctl status mysql
+
+#############Uncomment the reuired line in the mention path file################
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+pid-file = /var/run/mysqld/mysqld.pid
+
+
+sudo mkdir -p /var/run/mysqld
+sudo chown mysql:mysql /var/run/mysqld
+
+
+
+##############################Create mysql user#################################
+Add the root password
+sudo mysql -u root -p
+
+
+Create database  for Cloudera Manager SCM:
+CREATE DATABASE scm DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+
+
+Create user #% sign means that user 'scm' can login from any IP
+CREATE USER 'scm'@'%' IDENTIFIED BY 'atif@123';
+
+Grant access to all tables in the schema to user SCM
+GRANT ALL PRIVILEGES ON scm.* TO 'scm'@'%' ;
+
+
+CREATE DATABASE rmanager DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+
+
+CREATE USER 'rmanager'@'%' IDENTIFIED BY 'atif@123';
+
+
+show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| rmanager           |
+| scm                |
+| sys                |
++--------------------+
+
+
+/etc/apt/sources.list.d/cloudera-manager.list
+/etc/apt/sources.list.d/cloudera-manager-trial.list
+
+
+
+
+###############Comment this ram part in this file sudo nano /etc/apt/sources.list
+deb cdrom:.......
+
+
+####################get the installar and install The CM########################
+wget https://archive.cloudera.com/cm7/7.4.4/cloudera-manager-installer.bin
+chmod u+x cloudera-manager-installer.bin
+
+Run the cloudera manager
+sudo ./cloudera-manager-installer.bin
+
+https://www.cloudera.com/downloads/cdp-private-cloud-trial/cdp-private-cloud-base-trial.html
+
+https://www.cloudera.com/downloads/cdp-private-cloud-trial/cdp-private-cloud-base-trial.html
+
+
+---------Restart the Cloudera Scm Server
+sudo systemctl restart cloudera-scm-server
+
+
+###########################Set Up a Cluster Using the Wizard######################
+Follow the document for other steps
+
+
+
+
+
+
+

@@ -1,0 +1,100 @@
+first sudo hostnamectl set-hostname $(hostname).cdp.dev.gcp1.kafd
+
+
+1.Check accessibility of All Servers.
+ssh server name
+
+2.Check hostnames and /etc/hosts file.
+vi /etc/hosts
+add all servers here
+
+3.Check directory structure on all servers. It should be same as proposed.
+df -h
+
+
+4.Check if servers are able to ping each other.
+
+
+5.Check Java Versions on all servers.
+only install in main server
+
+6.Disable conflicting repos for KAFD
+
+mv /etc/yum.repos.d/ums_appstream.repo /etc/yum.repos.d/ums_appstream.repo.bak
+mv /etc/yum.repos.d/ums_baserepo.repo /etc/yum.repos.d/ums_baserepo.repo.bak
+ls -ltr /etc/yum.repos.d/
+yum check-update
+
+
+7.Check Python Versions on all servers. Make sure python is included in $PATH
+
+sudo yum -y install python3.8
+python3.8 --version
+sudo pip3.8 install psycopg2-binary
+
+8. Check License and generate license user creds.
+9	Check availability of installation material
+
+10	Check internet availability on servers.
+
+11	Time Sync: Enable and configure chronyd for time syncing (Alternative of ntpd)
+
+12	Disable SELinux on all servers
+vi /etc/selinux/config
+Press 'i' to goto edit mode
+Change SELINUX=enforcing to SELINUX=permissive
+
+13	Set VM Swapiness=1
+
+sudo sysctl -w vm.swappiness=1
+sudo echo 'vm.swappiness=1' > /etc/sysctl.d/90-cloudera-swappiness.conf
+
+
+
+
+sudo echo "sudo hostnamectl set-hostname mstr-oz-cdp-dev.cdp.dev.gcp1.kafd" >> /etc/rc.local
+
+
+
+
+
+
+
+
+
+
+
+14	Disable Transparent huge files
+
+sudo vi /etc/rc.local
+
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+echo never > /sys/kernel/mm/transparent_hugepage/defrag
+sudo sed -i '/Google/ s/^/#/' /etc/hosts
+
+15	Disable Firewall
+
+16	Create one new user for Cloudera internal use on all servers
+17	Generate SSH keys on EN1 and Enable SSH from EN1 to All servers
+    cat $HOME/.ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys
+
+
+18	Install Kafka
+19	Install Stream Messaging Manager
+20	Install Schema Registery
+	
+	Enable Kerberos
+	Install Solr
+	Install Ranger
+	Integrate Dataiku with Cloudera.
+	
+	Install Nifi
+
+
+	check cloudera manager status
+	sudo systemctl status cloudera-scm-server
+
+start cloudera manager 
+sudo systemctl start cloudera-scm-server
+
+
